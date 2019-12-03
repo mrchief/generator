@@ -43,13 +43,45 @@ module.exports = ({ Nunjucks, _ }) => {
     return ret
   })
 
-  Nunjucks.addFilter('publishPayload', (channel) => {
-    return payload(channel.publish())
+  Nunjucks.addFilter('publishPayloadClass', (channel) => {
+    var ret = payloadClass(channel.publish())
+    if (!ret) {
+        console.log("Warning: No publisher payload found. If you want to publish, please define publish.message.payload.title.")
+    }
+    return ret
   })
 
-  function payload(pubOrSub) {
-    var ret
-    console.log(JSON.stringify(pubOrSub))
+  Nunjucks.addFilter('subscribePayloadClass', (channel) => {
+    var ret = payloadClass(channel.subscribe())
+    if (!ret) {
+        console.log("Warning: No subscriber payload found. If you want to subscribe, please define subscribe.message.payload.title.")
+    }
+    return ret
+  })
+
+  function payloadClass(pubOrSub) {
+    var ret = _.upperFirst(pubOrSub._json.message.payload.title)
+    return ret
+  }
+
+  Nunjucks.addFilter('publishMessageClass', (channel) => {
+    var ret = messageClass(channel.publish())
+    if (!ret) {
+        console.log("Warning: No publisher message name found. If you want to publish, please define publish.message.name.")
+    }
+    return ret
+  })
+
+  Nunjucks.addFilter('subscribeMessageClass', (channel) => {
+    var ret = messageClass(channel.subscribe())
+    if (!ret) {
+        console.log("Warning: No subscriber message name found. If you want to subscribe, please define subscribe.message.name.")
+    }
+    return ret
+  })
+
+  function messageClass(pubOrSub) {
+    var ret = _.upperFirst(pubOrSub._json.message.name)
     return ret
   }
 

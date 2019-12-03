@@ -3,6 +3,21 @@ import java.util.HashMap;
 
 public class {{ messageName }} { 
 
+
+    // Topic: This field allows the client to see the topic
+    // of a received messages. It is not necessary to set this 
+    // when publishing.
+
+    private String topic;
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
     // Headers with their getters and setters.
     private HashMap<String, Object> headers = new HashMap<>();
 {% for name, prop in message.json().headers.properties -%}
@@ -28,11 +43,11 @@ public class {{ messageName }} {
 
     private {{ type }} {{ name }};
 
-    public {{ type | upperFirst }} getPayload() {
-        return {{ type | lowerFirst }};
+    public {{ type }} getPayload() {
+        return {{ name }};
     }
 
-    public void setPayload({{ type | upperFirst }} {{ type | lowerFirst }}) {
+    public void setPayload({{ type }} {{ name }}) {
         this.{{- name }} = {{ name }};
     }
 }
