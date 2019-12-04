@@ -1,7 +1,8 @@
 {% include '.partials/java-package' -%}
 import java.util.HashMap;
+{%- set className = messageName | upperFirst %}
 
-public class {{ messageName }} { 
+public class {{ className }} { 
 
 
     // Topic: This field allows the client to see the topic
@@ -14,8 +15,9 @@ public class {{ messageName }} {
         return topic;
     }
 
-    public void setTopic(String topic) {
+    public {{ className }} setTopic(String topic) {
         this.topic = topic;
+        return this;
     }
 
     // Headers with their getters and setters.
@@ -31,9 +33,10 @@ public class {{ messageName }} {
         return {{ name }};
     }
 
-    public void set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
+    public {{ className }} set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
         this.{{-name }} = {{ name }};
         headers.put("{{ name }}", {{ name }});
+        return this;
     }
 
 {% endfor %}
@@ -47,7 +50,8 @@ public class {{ messageName }} {
         return {{ name }};
     }
 
-    public void setPayload({{ type }} {{ name }}) {
+    public {{ className }} setPayload({{ type }} {{ name }}) {
         this.{{- name }} = {{ name }};
+        return this;
     }
 }

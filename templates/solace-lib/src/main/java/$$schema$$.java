@@ -1,6 +1,7 @@
 {% include '.partials/java-package' -%}
+{%- set className = schemaName | upperFirst %}
 
-public class {{ schemaName }} { 
+public class {{ className }} { 
 {% for name, prop in schema.properties() -%}
 {%- set type = prop.type() | fixType %}
 private {{ type }} {{ name }};
@@ -12,8 +13,9 @@ public {{ type }} get{{- name | upperFirst }}() {
     return {{ name }};
 }
 
-public void set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
+public {{ className }} set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
     this.{{-name }} = {{ name }};
+    return this;
 }
 
 {% endfor %}
