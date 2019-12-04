@@ -5,13 +5,13 @@
 {%- set publishPayloadClass = channel | publishPayloadClass -%}
 {%- set subscribeMessageClass = channel | subscribeMessageClass -%}
 {%- set subscribePayloadClass = channel | subscribePayloadClass -%}
+{%- set contentType = channel | contentType -%}
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solacesystems.jcsmp.BytesXMLMessage;
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPFactory;
@@ -41,7 +41,7 @@ public class {{ className }} {
     @Autowired
     private SolaceSession solaceSession;
     private JCSMPSession jcsmpSession;
-    private ObjectMapper mapper = new ObjectMapper();
+    private Serializer<{{ publishPayloadClass }}> serializer;
     private TextMessage textMessage = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
 {%- if channel.hasPublish() %}
     private XMLMessageProducer producer;
@@ -53,6 +53,11 @@ public class {{ className }} {
     @PostConstruct
     public void init() throws Exception {
         jcsmpSession = solaceSession.getSession();
+{%- if contentType %}
+        serializer = SerializerFactory.getSerializer("{{ contentType }}", {{ publishPayloadClass }}.class);
+{%- else %}
+        serializer = SerializerFactory.getSerializer(null, {{ publishPayloadClass }}.class);
+{%- endif %}
     }
 {% if channel.hasSubscribe() %}
     public void subscribe(SubscribeListener listener) throws Exception {
@@ -81,14 +86,14 @@ public class {{ className }} {
     public void send{{ publishMessageClass }}({{ publishMessageClass }} {{ lowerMessageName }}, {{ topicInfo.functionParamList }}) throws Exception {
         Topic topic = formatTopic({{ topicInfo.functionArgList }});
         {{ publishPayloadClass }} payload = {{ lowerMessageName }}.getPayload();
-        String payloadString = mapper.writeValueAsString(payload);
+        String payloadString = serializer.serialize(payload);
         textMessage.setText(payloadString);
         producer.send(textMessage, topic);
     }
    
     public void send{{ publishPayloadClass }}({{ publishPayloadClass }} {{ lowerPayloadName }}, {{ topicInfo.functionParamList }}) throws Exception {
         Topic topic = formatTopic({{ topicInfo.functionArgList }});
-        String payloadString = mapper.writeValueAsString({{ lowerPayloadName }});
+        String payloadString = serializer.serialize({{ lowerPayloadName }});
         textMessage.setText(payloadString);
         producer.send(textMessage, topic);
     }
@@ -135,7 +140,7 @@ public class {{ className }} {
             TextMessage textMessage = (TextMessage) bytesMessage;
             {{ subscribePayloadClass }} payload;
             try {
-                payload = mapper.readValue(textMessage.getText(), {{ subscribePayloadClass }}.class);
+                payload = serializer.deserialize(textMessage.getText());
                 {{ subscribeMessageClass }}  {{ lowerMessageName }} = new {{ subscribeMessageClass }}();
                 {{ lowerMessageName }}.setPayload(payload);
                 {{ lowerMessageName }}.setTopic(bytesMessage.getDestination().getName());

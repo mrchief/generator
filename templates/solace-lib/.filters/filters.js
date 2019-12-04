@@ -43,6 +43,22 @@ module.exports = ({ Nunjucks, _ }) => {
     return ret
   })
 
+  Nunjucks.addFilter('contentType', (channel) => {
+
+    if (channel.hasPublish()) {
+        ret = contentType(channel.publish())
+    }
+    if (!ret && channel.hasSubscribe()) {
+        ret = contentType(channel.subscribe())
+    }
+
+    return ret
+  })
+
+  function contentType(pubOrSub) {
+    return pubOrSub._json.message.contentType
+  }
+
   Nunjucks.addFilter('publishPayloadClass', (channel) => {
     var ret = payloadClass(channel.publish())
     if (!ret) {
