@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.solacesystems.jcsmp.BytesXMLMessage;
+{% if channel.hasPublish() -%}
+import com.solacesystems.jcsmp.DeliveryMode;
+{% endif -%}
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPSession;
@@ -58,7 +61,15 @@ public class {{ className }} {
 {%- else %}
         serializer = SerializerFactory.getSerializer(null, {{ publishPayloadClass }}.class);
 {%- endif %}
+ 
     }
+{% if channel.hasPublish() %}
+    public void initPublisher(PublishListener publishListener) throws Exception {
+    	PublishEventHandler handler = new PublishEventHandler(publishListener);
+    	producer = jcsmpSession.getMessageProducer(handler);
+        textMessage.setDeliveryMode(DeliveryMode.{{ channel | deliveryMode }});
+    }
+{%- endif %}
 {% if channel.hasSubscribe() %}
     public void subscribe(SubscribeListener listener) throws Exception {
     	MessageListener messageListener = new MessageListener(listener);
@@ -68,12 +79,7 @@ public class {{ className }} {
     	consumer.start();
     }
 {%- endif %}
-{%- if channel.hasPublish() %}
-    public void initPublisher(PublishListener publishListener) throws Exception {
-    	PublishEventHandler handler = new PublishEventHandler(publishListener);
-    	producer = jcsmpSession.getMessageProducer(handler);
-    }
-
+{% if channel.hasPublish() %}
     private Topic formatTopic({{ topicInfo.functionParamList }}) {
         String topicString = String.format(PUBLISH_TOPIC, {{ topicInfo.functionArgList }});
         Topic topic = JCSMPFactory.onlyInstance().createTopic(topicString);

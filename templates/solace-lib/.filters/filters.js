@@ -23,6 +23,42 @@ module.exports = ({ Nunjucks, _ }) => {
     return ret
   })
 
+  Nunjucks.addFilter('camelCase', (str) => {
+    return _.camelCase(str)
+  })
+
+  Nunjucks.addFilter('contentType', (channel) => {
+
+    if (channel.hasPublish()) {
+        ret = contentType(channel.publish())
+    }
+    if (!ret && channel.hasSubscribe()) {
+        ret = contentType(channel.subscribe())
+    }
+
+    return ret
+  })
+
+  Nunjucks.addFilter('deliveryMode', (channel) => {
+    val = channel.publish()._json.bindings.solace.deliveryMode
+    if (!val) {
+        ret = 'DIRECT'
+    } else {
+        ret = _.upperCase(val)
+        if (ret != 'DIRECT' && ret != 'PERSISTENT') {
+            throw new Error("delivery mode must be direct or persistent. Found: " + val)
+        }
+    }
+
+    return ret;
+  })
+
+  function contentType(pubOrSub) {
+    return pubOrSub._json.message.contentType
+  }
+
+  Nunjucks.addFilter('dump', dump)
+
   Nunjucks.addFilter('fixType', (str) => {
     var ret = typeMap.get(str)
     if (!ret) {
@@ -43,47 +79,26 @@ module.exports = ({ Nunjucks, _ }) => {
     return ret
   })
 
-  Nunjucks.addFilter('contentType', (channel) => {
-
-    if (channel.hasPublish()) {
-        ret = contentType(channel.publish())
-    }
-    if (!ret && channel.hasSubscribe()) {
-        ret = contentType(channel.subscribe())
-    }
-
-    return ret
+  Nunjucks.addFilter('kebabCase', (str) => {
+    return _.kebabCase(str)
   })
 
-  function contentType(pubOrSub) {
-    return pubOrSub._json.message.contentType
-  }
-
-  Nunjucks.addFilter('publishPayloadClass', (channel) => {
-    var ret = payloadClass(channel.publish())
-    if (!ret) {
-        console.log("Warning: No publisher payload found. If you want to publish, please define publish.message.payload.title.")
-    }
-    return ret
+  Nunjucks.addFilter('lowerFirst', (str) => {
+    return _.lowerFirst(str)
   })
-
-  Nunjucks.addFilter('subscribePayloadClass', (channel) => {
-    var ret = payloadClass(channel.subscribe())
-    if (!ret) {
-        console.log("Warning: No subscriber payload found. If you want to subscribe, please define subscribe.message.payload.title.")
-    }
-    return ret
-  })
-
-  function payloadClass(pubOrSub) {
-    var ret = _.upperFirst(pubOrSub._json.message.payload.title)
-    return ret
-  }
 
   Nunjucks.addFilter('publishMessageClass', (channel) => {
     var ret = messageClass(channel.publish())
     if (!ret) {
         console.log("Warning: No publisher message name found. If you want to publish, please define publish.message.name.")
+    }
+    return ret
+  })
+
+  Nunjucks.addFilter('publishPayloadClass', (channel) => {
+    var ret = payloadClass(channel.publish())
+    if (!ret) {
+        console.log("Warning: No publisher payload found. If you want to publish, please define publish.message.payload.title.")
     }
     return ret
   })
@@ -96,10 +111,13 @@ module.exports = ({ Nunjucks, _ }) => {
     return ret
   })
 
-  function messageClass(pubOrSub) {
-    var ret = _.upperFirst(pubOrSub._json.message.name)
+  Nunjucks.addFilter('subscribePayloadClass', (channel) => {
+    var ret = payloadClass(channel.subscribe())
+    if (!ret) {
+        console.log("Warning: No subscriber payload found. If you want to subscribe, please define subscribe.message.payload.title.")
+    }
     return ret
-  }
+  })
 
   Nunjucks.addFilter('topicInfo', ([channelName, channel]) => {
     var ret = {}
@@ -162,15 +180,9 @@ module.exports = ({ Nunjucks, _ }) => {
     return ret
   })
 
-/*
-  Nunjucks.addFilter('propNames', (schema) => {
-    var ret = []
-    for (var p in schema) {
-        ret.push(p)
-    }
-    return ret
+  Nunjucks.addFilter('upperFirst', (str) => {
+    return _.upperFirst(str)
   })
-*/
 
   function dump(obj) {
     var s = '' + typeof obj
@@ -181,21 +193,14 @@ module.exports = ({ Nunjucks, _ }) => {
     return s
   }
 
-  Nunjucks.addFilter('dump', dump)
+  function messageClass(pubOrSub) {
+    var ret = _.upperFirst(pubOrSub._json.message.name)
+    return ret
+  }
 
-  Nunjucks.addFilter('camelCase', (str) => {
-    return _.camelCase(str)
-  })
+  function payloadClass(pubOrSub) {
+    var ret = _.upperFirst(pubOrSub._json.message.payload.title)
+    return ret
+  }
 
-  Nunjucks.addFilter('kebabCase', (str) => {
-    return _.kebabCase(str)
-  })
-
-  Nunjucks.addFilter('lowerFirst', (str) => {
-    return _.lowerFirst(str)
-  })
-
-  Nunjucks.addFilter('upperFirst', (str) => {
-    return _.upperFirst(str)
-  })
 }
