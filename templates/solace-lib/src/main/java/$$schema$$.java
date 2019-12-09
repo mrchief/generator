@@ -10,12 +10,12 @@ private {{ type }} {{ name }};
 {% for name, prop in schema.properties() -%}
 {%- set type = prop.type() | fixType %}
 public {{ type }} get{{- name | upperFirst }}() {
-    return {{ name }};
+	return {{ name }};
 }
 
 public {{ className }} set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
-    this.{{-name }} = {{ name }};
-    return this;
+	this.{{-name }} = {{ name }};
+	return this;
 }
 
 {% endfor %}

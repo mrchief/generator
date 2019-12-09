@@ -5,53 +5,53 @@ import java.util.HashMap;
 public class {{ className }} { 
 
 
-    // Topic: This field allows the client to see the topic
-    // of a received messages. It is not necessary to set this 
-    // when publishing.
+	// Topic: This field allows the client to see the topic
+	// of a received messages. It is not necessary to set this 
+	// when publishing.
 
-    private String topic;
+	private String topic;
 
-    public String getTopic() {
-        return topic;
-    }
+	public String getTopic() {
+		return topic;
+	}
 
-    public {{ className }} setTopic(String topic) {
-        this.topic = topic;
-        return this;
-    }
+	public {{ className }} setTopic(String topic) {
+		this.topic = topic;
+		return this;
+	}
 
-    // Headers with their getters and setters.
-    private HashMap<String, Object> headers = new HashMap<>();
+	// Headers with their getters and setters.
+	private HashMap<String, Object> headers = new HashMap<>();
 {% for name, prop in message.json().headers.properties -%}
 {%- set type = prop.type | fixType %}
-    private {{ type }} {{ name }};
+	private {{ type }} {{ name }};
 {% endfor %}
 
 {%- for name, prop in message.json().headers.properties -%}
 {%- set type = prop.type | fixType %}
-    public {{ type }} get{{- name | upperFirst }}() {
-        return {{ name }};
-    }
+	public {{ type }} get{{- name | upperFirst }}() {
+		return {{ name }};
+	}
 
-    public {{ className }} set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
-        this.{{-name }} = {{ name }};
-        headers.put("{{ name }}", {{ name }});
-        return this;
-    }
+	public {{ className }} set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
+		this.{{-name }} = {{ name }};
+		headers.put("{{ name }}", {{ name }});
+		return this;
+	}
 
 {% endfor %}
-    // Payload
+	// Payload
 {%- set type = message.json().payload.title | upperFirst %}
 {% set name = message.json().payload.title | lowerFirst %}
 
-    private {{ type }} {{ name }};
+	private {{ type }} {{ name }};
 
-    public {{ type }} getPayload() {
-        return {{ name }};
-    }
+	public {{ type }} getPayload() {
+		return {{ name }};
+	}
 
-    public {{ className }} setPayload({{ type }} {{ name }}) {
-        this.{{- name }} = {{ name }};
-        return this;
-    }
+	public {{ className }} setPayload({{ type }} {{ name }}) {
+		this.{{- name }} = {{ name }};
+		return this;
+	}
 }
