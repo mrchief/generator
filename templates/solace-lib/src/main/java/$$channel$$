@@ -1,4 +1,5 @@
 {%- set topicInfo = [channelName, channel] | topicInfo %}
+{%- set queueInfo = [channelName, channel, topicInfo.subscribeTopic] | queueInfo %}
 {% set className = channel.json()['x-java-class'] -%}
 {% include '.partials/java-package' -%}
 {%- set publishMessageClass = channel | publishMessageClass -%}
@@ -61,7 +62,9 @@ public class {{ className }} {
 {%- else %}
         serializer = SerializerFactory.getSerializer(null, {{ publishPayloadClass }}.class);
 {%- endif %}
- 
+{%- if queueInfo.needQueue %}
+        provisionQueue();
+{%- endif %}
     }
 {% if channel.hasPublish() %}
     public void initPublisher(PublishListener publishListener) throws Exception {
@@ -184,5 +187,22 @@ public class {{ className }} {
     }
 
 {%- endif %}
+
+{%- if queueInfo.needQueue %}
+
+    public void setupQueue() {
+        final Queue queue = JCSMPFactory.onlyInstance().createQueue("{{ queueInfo.queueName }}");
+        final EndpointProperties endpointProps = new EndpointProperties();
+        endpointProps.setPermission(EndpointProperties.PERMISSION_DELETE);
+        endpointProps.setAccessType(EndpointProperties.{{ queueInfo.accessType }});
+        jcsmpSession.provision(queue, endpointProps, JCSMPSession.FLAG_IGNORE_ALREADY_EXISTS);
+        {% if queueInfo.subscription -%}
+        Topic topic = JCSMPFactory.onlyInstance().createTopic("{{ queueInfo.subscription }}");
+        jcsmpSession.addSubscription(queue, topic, JCSMPSession.WAIT_FOR_CONFIRM);
+        {%- endif %}
+    }
+
+{%- endif %}
+
 }
 
