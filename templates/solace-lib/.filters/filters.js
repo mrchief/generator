@@ -29,6 +29,9 @@ module.exports = ({ Nunjucks, _ }) => {
 
     Nunjucks.addFilter('contentType', (channel) => {
 
+        console.log("contentType start")
+        var ret;
+
         if (channel.hasPublish()) {
             ret = contentType(channel.publish())
         }
@@ -36,6 +39,7 @@ module.exports = ({ Nunjucks, _ }) => {
             ret = contentType(channel.subscribe())
         }
 
+        console.log("contentType " + ret)
         return ret
     })
 
@@ -87,18 +91,24 @@ module.exports = ({ Nunjucks, _ }) => {
         return _.lowerFirst(str)
     })
 
-    Nunjucks.addFilter('publishMessageClass', (channel) => {
+    Nunjucks.addFilter('messageClass', ([channelName, channel]) => {
         var ret = messageClass(channel.publish())
         if (!ret) {
-            console.log("Warning: No publisher message name found. If you want to publish, please define publish.message.name.")
+            ret = messageClass(channel.subscribe())
+        }
+        if (!ret) {
+            throw new Error("Channel " + channelName + ": no message class has been defined.")
         }
         return ret
     })
 
-    Nunjucks.addFilter('publishPayloadClass', (channel) => {
+    Nunjucks.addFilter('payloadClass', ([channelName, channel]) => {
         var ret = payloadClass(channel.publish())
         if (!ret) {
-            console.log("Warning: No publisher payload found. If you want to publish, please define publish.message.payload.title.")
+            ret = payloadClass(channel.subscribe())
+        }
+        if (!ret) {
+            throw new Error("Channel " + channelName + ": no payload class has been defined.")
         }
         return ret
     })
@@ -110,14 +120,13 @@ module.exports = ({ Nunjucks, _ }) => {
         console.log("bindings: " + JSON.stringify(bindings))
         if (bindings) {
             ret.isQueue = bindings.is === 'queue'
-            ret.queue = bindings.queue
-            if (!ret.isQueue && ret.queue && !ret.queue.name) {
+            if (!ret.isQueue && bindings.queue && !bindings.queue.name) {
                 throw new Exception("Channel " + channelName + " please provide a queue name.");
             }
             ret.needQueue = ret.isQueue || bindings.queue.name
-            ret.queueName = bindings.queue.name ? bindings.queue.name : channelName
-            ret.accessType = bindings.queue.exclusive ? "ACCESSTYPE_EXCLUSIVE" : "ACCESSTYPE_NONEXCLUSIVE"
-            if (bindings.queue.subscription) {
+            ret.queueName = bindings.queue && bindings.queue.name ? bindings.queue.name : channelName
+            ret.accessType = bindings.queue && bindings.queue.exclusive ? "ACCESSTYPE_EXCLUSIVE" : "ACCESSTYPE_NONEXCLUSIVE"
+            if (bindings.queue && bindings.queue.subscription) {
                 ret.subscription = bindings.queue.subscription
             } else if (!ret.isQueue) {
                 ret.subscription = subscribeTopic
@@ -125,22 +134,6 @@ module.exports = ({ Nunjucks, _ }) => {
         }
         console.log("queueInfo: " + JSON.stringify(ret))
         return ret;
-    })
-
-    Nunjucks.addFilter('subscribeMessageClass', (channel) => {
-        var ret = messageClass(channel.subscribe())
-        if (!ret) {
-            console.log("Warning: No subscriber message name found. If you want to subscribe, please define subscribe.message.name.")
-        }
-        return ret
-    })
-
-    Nunjucks.addFilter('subscribePayloadClass', (channel) => {
-        var ret = payloadClass(channel.subscribe())
-        if (!ret) {
-            console.log("Warning: No subscriber payload found. If you want to subscribe, please define subscribe.message.payload.title.")
-        }
-        return ret
     })
 
     Nunjucks.addFilter('toJson', (object) => {
@@ -156,7 +149,7 @@ module.exports = ({ Nunjucks, _ }) => {
         var functionArgList = ""
         var first = true
 
-        //console.log("params: " + JSON.stringify(channel.parameters()))
+        console.log("params: " + JSON.stringify(channel.parameters()))
         for (var name in channel.parameters()) {
             var nameWithBrackets = "{" + name + "}"
             var schema = channel.parameter(name)['_json']['schema']
@@ -222,12 +215,22 @@ module.exports = ({ Nunjucks, _ }) => {
     }
 
     function messageClass(pubOrSub) {
-        var ret = _.upperFirst(pubOrSub._json.message.name)
+        var ret
+
+        if (pubOrSub && pubOrSub._json && pubOrSub._json.message) {
+            ret = _.upperFirst(pubOrSub._json.message.name)
+        }
+
         return ret
     }
 
     function payloadClass(pubOrSub) {
-        var ret = _.upperFirst(pubOrSub._json.message.payload.title)
+        var ret
+
+        if (pubOrSub && pubOrSub._json && pubOrSub._json.message && pubOrSub._json.message.payload) {
+            ret = _.upperFirst(pubOrSub._json.message.payload.title)
+        }
+
         return ret
     }
 

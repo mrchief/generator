@@ -1,11 +1,9 @@
 {%- set topicInfo = [channelName, channel] | topicInfo %}
 {%- set queueInfo = [channelName, channel, topicInfo.subscribeTopic] | queueInfo %}
-{% set className = channel.json()['x-java-class'] -%}
-{% include '.partials/java-package' -%}
-{%- set publishMessageClass = channel | publishMessageClass -%}
-{%- set publishPayloadClass = channel | publishPayloadClass -%}
-{%- set subscribeMessageClass = channel | subscribeMessageClass -%}
-{%- set subscribePayloadClass = channel | subscribePayloadClass -%}
+{%- set className = channel.json()['x-java-class'] -%}
+{%- include '.partials/java-package' -%}
+{%- set messageClass = [channelName, channel] | messageClass -%}
+{%- set payloadClass = [channelName, channel] | payloadClass -%}
 {%- set contentType = channel | contentType -%}
 
 import javax.annotation.PostConstruct;
@@ -14,17 +12,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.solacesystems.jcsmp.BytesXMLMessage;
+{% if channel.hasSubscribe() and queueInfo.isQueue -%}
+import com.solacesystems.jcsmp.ConsumerFlowProperties;
+{% endif -%}
 {% if channel.hasPublish() -%}
 import com.solacesystems.jcsmp.DeliveryMode;
+{% endif -%}
+{%- if queueInfo.needQueue %}
+import com.solacesystems.jcsmp.EndpointProperties;
+{% endif -%}
+{%- if queueInfo.subscription %}
+import com.solacesystems.jcsmp.JCSMPErrorResponseException;
+import com.solacesystems.jcsmp.JCSMPErrorResponseSubcodeEx;
+{% endif -%}
+{% if channel.hasSubscribe() and queueInfo.isQueue -%}
+import com.solacesystems.jcsmp.FlowReceiver;
 {% endif -%}
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPSession;
+{% if channel.hasPublish() -%}
 import com.solacesystems.jcsmp.JCSMPStreamingPublishEventHandler;
+{% endif -%}
+{%- if queueInfo.needQueue %}
+import com.solacesystems.jcsmp.Queue;
+{% endif -%}
 import com.solacesystems.jcsmp.TextMessage;
+{%- if channel.hasPublish() or not queueInfo.isQueue -%}
 import com.solacesystems.jcsmp.Topic;
+{% endif -%}
 {% if channel.hasSubscribe() -%}
+{% if not queueInfo.isQueue -%}
 import com.solacesystems.jcsmp.XMLMessageConsumer;
+{% endif -%}
 import com.solacesystems.jcsmp.XMLMessageListener;
 {% endif -%}
 {% if channel.hasPublish() -%}
@@ -38,29 +58,33 @@ public class {{ className }} {
 {%- if channel.hasPublish() %}
     private static final String PUBLISH_TOPIC = "{{ topicInfo.publishTopic }}";
 {%- endif -%}
-{%- if channel.hasSubscribe() %}
+{%- if channel.hasSubscribe() and not queueInfo.isQueue %}
     private static final String SUBSCRIBE_TOPIC = "{{ topicInfo.subscribeTopic }}";
 {%- endif %}
 
     @Autowired
     private SolaceSession solaceSession;
     private JCSMPSession jcsmpSession;
-    private Serializer<{{ publishPayloadClass }}> serializer;
-    private TextMessage textMessage = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
+    private Serializer<{{ payloadClass }}> serializer;
 {%- if channel.hasPublish() %}
+    private TextMessage textMessage = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
     private XMLMessageProducer producer;
 {%- endif -%}
 {%- if channel.hasSubscribe() %}
-    XMLMessageConsumer consumer;        
+{%- if queueInfo.isQueue %}
+    private FlowReceiver flowReceiver;        
+{%- else %}
+    private XMLMessageConsumer consumer;        
+{%- endif %}
 {%- endif %}
 
     @PostConstruct
     public void init() throws Exception {
         jcsmpSession = solaceSession.getSession();
 {%- if contentType %}
-        serializer = SerializerFactory.getSerializer("{{ contentType }}", {{ publishPayloadClass }}.class);
+        serializer = SerializerFactory.getSerializer("{{ contentType }}", {{ payloadClass }}.class);
 {%- else %}
-        serializer = SerializerFactory.getSerializer(null, {{ publishPayloadClass }}.class);
+        serializer = SerializerFactory.getSerializer(null, {{ payloadClass }}.class);
 {%- endif %}
 {%- if queueInfo.needQueue %}
         provisionQueue();
@@ -74,6 +98,16 @@ public class {{ className }} {
     }
 {%- endif %}
 {% if channel.hasSubscribe() %}
+{% if queueInfo.isQueue %}
+    public void subscribe(SubscribeListener listener) throws Exception {
+    	MessageListener messageListener = new MessageListener(listener);
+        final Queue queue = JCSMPFactory.onlyInstance().createQueue("{{ queueInfo.queueName }}");
+        ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
+        flowProps.setEndpoint(queue);
+    	flowReceiver = jcsmpSession.createFlow(messageListener, flowProps);
+    	flowReceiver.start();
+    }
+{% else %}
     public void subscribe(SubscribeListener listener) throws Exception {
     	MessageListener messageListener = new MessageListener(listener);
     	consumer = jcsmpSession.getMessageConsumer(messageListener);
@@ -82,6 +116,7 @@ public class {{ className }} {
     	consumer.start();
     }
 {%- endif %}
+{%- endif %}
 {% if channel.hasPublish() %}
     private Topic formatTopic({{ topicInfo.functionParamList }}) {
         String topicString = String.format(PUBLISH_TOPIC, {{ topicInfo.functionArgList }});
@@ -89,18 +124,18 @@ public class {{ className }} {
         return topic;
     }
 
-{%- set lowerMessageName = publishMessageClass | lowerFirst %}
-{%- set lowerPayloadName = publishPayloadClass | lowerFirst %}
+{%- set lowerMessageName = messageClass | lowerFirst %}
+{%- set lowerPayloadName = payloadClass | lowerFirst %}
 
-    public void send{{ publishMessageClass }}({{ publishMessageClass }} {{ lowerMessageName }}, {{ topicInfo.functionParamList }}) throws Exception {
+    public void send{{ messageClass }}({{ messageClass }} {{ lowerMessageName }}, {{ topicInfo.functionParamList }}) throws Exception {
         Topic topic = formatTopic({{ topicInfo.functionArgList }});
-        {{ publishPayloadClass }} payload = {{ lowerMessageName }}.getPayload();
+        {{ payloadClass }} payload = {{ lowerMessageName }}.getPayload();
         String payloadString = serializer.serialize(payload);
         textMessage.setText(payloadString);
         producer.send(textMessage, topic);
     }
    
-    public void send{{ publishPayloadClass }}({{ publishPayloadClass }} {{ lowerPayloadName }}, {{ topicInfo.functionParamList }}) throws Exception {
+    public void send{{ payloadClass }}({{ payloadClass }} {{ lowerPayloadName }}, {{ topicInfo.functionParamList }}) throws Exception {
         Topic topic = formatTopic({{ topicInfo.functionArgList }});
         String payloadString = serializer.serialize({{ lowerPayloadName }});
         textMessage.setText(payloadString);
@@ -111,12 +146,17 @@ public class {{ className }} {
 
     public void close() {
 {% if channel.hasSubscribe() %}
+{%- if queueInfo.isQueue %}
+        if (flowReceiver != null) {
+            flowReceiver.close();        
+        }
+{% else %}
         if (consumer != null) {
             consumer.close();        
         }
-
-        solaceSession.close();
+{% endif -%}
 {% endif %}
+        solaceSession.close();
     }
 
 {% for param in topicInfo.params -%}
@@ -125,9 +165,9 @@ public class {{ className }} {
 {% endif -%}
 {%- endfor -%}
 {%- if channel.hasSubscribe() -%}
-{%- set lowerMessageName = subscribeMessageClass | lowerFirst %}
+{%- set lowerMessageName = messageClass | lowerFirst %}
     public interface SubscribeListener {
-        public void onReceive({{subscribeMessageClass}} {{ lowerMessageName }});
+        public void onReceive({{messageClass}} {{ lowerMessageName }});
         public void handleException(Exception exception);
     }
     
@@ -147,10 +187,10 @@ public class {{ className }} {
         @Override
         public void onReceive(BytesXMLMessage bytesMessage) {
             TextMessage textMessage = (TextMessage) bytesMessage;
-            {{ subscribePayloadClass }} payload;
+            {{ payloadClass }} payload;
             try {
                 payload = serializer.deserialize(textMessage.getText());
-                {{ subscribeMessageClass }}  {{ lowerMessageName }} = new {{ subscribeMessageClass }}();
+                {{ messageClass }}  {{ lowerMessageName }} = new {{ messageClass }}();
                 {{ lowerMessageName }}.setPayload(payload);
                 {{ lowerMessageName }}.setTopic(bytesMessage.getDestination().getName());
                 listener.onReceive({{ lowerMessageName }});
@@ -190,15 +230,21 @@ public class {{ className }} {
 
 {%- if queueInfo.needQueue %}
 
-    public void setupQueue() {
+    public void provisionQueue() throws Exception {
         final Queue queue = JCSMPFactory.onlyInstance().createQueue("{{ queueInfo.queueName }}");
         final EndpointProperties endpointProps = new EndpointProperties();
         endpointProps.setPermission(EndpointProperties.PERMISSION_DELETE);
         endpointProps.setAccessType(EndpointProperties.{{ queueInfo.accessType }});
         jcsmpSession.provision(queue, endpointProps, JCSMPSession.FLAG_IGNORE_ALREADY_EXISTS);
         {% if queueInfo.subscription -%}
-        Topic topic = JCSMPFactory.onlyInstance().createTopic("{{ queueInfo.subscription }}");
-        jcsmpSession.addSubscription(queue, topic, JCSMPSession.WAIT_FOR_CONFIRM);
+        try {
+            Topic topic = JCSMPFactory.onlyInstance().createTopic("{{ queueInfo.subscription }}");
+            jcsmpSession.addSubscription(queue, topic, JCSMPSession.WAIT_FOR_CONFIRM);
+        } catch (JCSMPErrorResponseException ex) {
+            if (ex.getSubcodeEx() != JCSMPErrorResponseSubcodeEx.SUBSCRIPTION_ALREADY_PRESENT) {
+                throw ex;
+            }
+        }
         {%- endif %}
     }
 
