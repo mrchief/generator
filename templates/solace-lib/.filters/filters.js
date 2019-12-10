@@ -1,16 +1,18 @@
 module.exports = ({ Nunjucks, _ }) => {
 
-    var typeMap = new Map()
+    const typeMap = new Map()
     typeMap.set('integer', 'int')
+    typeMap.set('number', 'double')
     typeMap.set('string', 'String')
 
-    var formatMap = new Map()
-    formatMap.set('string', '%s')
+    const formatMap = new Map()
     formatMap.set('enum', '%s')
     formatMap.set('integer', '%d')
+    formatMap.set('number', '%f')
+    formatMap.set('string', '%s')
 
     Nunjucks.addFilter('artifactId', ([info, params]) => {
-        var ret = ''
+        let ret = ''
         if (params['maven-artifact-id']) {
             ret = params['maven-artifact-id']
         } else if (info.extensions()['x-maven-artifact-id']) {
@@ -29,8 +31,8 @@ module.exports = ({ Nunjucks, _ }) => {
 
     Nunjucks.addFilter('contentType', (channel) => {
 
-        console.log("contentType start")
-        var ret;
+        //console.log("contentType start")
+        let ret;
 
         if (channel.hasPublish()) {
             ret = contentType(channel.publish())
@@ -39,12 +41,12 @@ module.exports = ({ Nunjucks, _ }) => {
             ret = contentType(channel.subscribe())
         }
 
-        console.log("contentType " + ret)
+        //console.log("contentType " + ret)
         return ret
     })
 
     Nunjucks.addFilter('deliveryMode', (channel) => {
-        val = channel.publish()._json.bindings.solace.deliveryMode
+        let val = channel.publish()._json.bindings.solace.deliveryMode
         if (!val) {
             ret = 'DIRECT'
         } else {
@@ -64,7 +66,7 @@ module.exports = ({ Nunjucks, _ }) => {
     Nunjucks.addFilter('dump', dump)
 
     Nunjucks.addFilter('fixType', (str) => {
-        var ret = typeMap.get(str)
+        let ret = typeMap.get(str)
         if (!ret) {
             ret = str
         }
@@ -72,7 +74,7 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     Nunjucks.addFilter('groupId', ([info, params]) => {
-        var ret = ''
+        let ret = ''
         if (params['maven-group-id']) {
             ret = params['maven-group-id']
         } else if (info.extensions()['x-maven-group-id']) {
@@ -92,7 +94,7 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     Nunjucks.addFilter('messageClass', ([channelName, channel]) => {
-        var ret = messageClass(channel.publish())
+        let ret = messageClass(channel.publish())
         if (!ret) {
             ret = messageClass(channel.subscribe())
         }
@@ -103,7 +105,7 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     Nunjucks.addFilter('payloadClass', ([channelName, channel]) => {
-        var ret = payloadClass(channel.publish())
+        let ret = payloadClass(channel.publish())
         if (!ret) {
             ret = payloadClass(channel.subscribe())
         }
@@ -114,10 +116,10 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     Nunjucks.addFilter('queueInfo', ([channelName, channel, subscribeTopic]) => {
-        var ret = {}
+        let ret = {}
         ret.isQueue = false;
-        var bindings = channel._json.bindings.solace
-        console.log("bindings: " + JSON.stringify(bindings))
+        const bindings = channel._json.bindings.solace
+        //console.log("bindings: " + JSON.stringify(bindings))
         if (bindings) {
             ret.isQueue = bindings.is === 'queue'
             if (!ret.isQueue && bindings.queue && !bindings.queue.name) {
@@ -132,7 +134,7 @@ module.exports = ({ Nunjucks, _ }) => {
                 ret.subscription = subscribeTopic
             }
         }
-        console.log("queueInfo: " + JSON.stringify(ret))
+        //console.log("queueInfo: " + JSON.stringify(ret))
         return ret;
     })
 
@@ -141,21 +143,21 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     Nunjucks.addFilter('topicInfo', ([channelName, channel]) => {
-        var ret = {}
-        var publishTopic = String(channelName)
-        var subscribeTopic = String(channelName)
-        var params = []
-        var functionParamList = ""
-        var functionArgList = ""
-        var first = true
+        const ret = {}
+        let publishTopic = String(channelName)
+        let subscribeTopic = String(channelName)
+        const params = []
+        let functionParamList = ""
+        let functionArgList = ""
+        let first = true
 
-        console.log("params: " + JSON.stringify(channel.parameters()))
-        for (var name in channel.parameters()) {
-            var nameWithBrackets = "{" + name + "}"
-            var schema = channel.parameter(name)['_json']['schema']
+        //console.log("params: " + JSON.stringify(channel.parameters()))
+        for (let name in channel.parameters()) {
+            const nameWithBrackets = "{" + name + "}"
+            const schema = channel.parameter(name)['_json']['schema']
             //console.log("schema: " + dump(schema))
-            var type = schema.type
-            var param = { "name": _.lowerFirst(name) }
+            const type = schema.type
+            const param = { "name": _.lowerFirst(name) }
 
             if (first) {
                 first = false
@@ -166,16 +168,16 @@ module.exports = ({ Nunjucks, _ }) => {
 
             if (type) {
                 //console.log("It's a type: " + type)
-                var javaType = typeMap.get(type)
+                const javaType = typeMap.get(type)
                 if (!javaType) throw new Error("topicInfo filter: type not found in typeMap: " + type)
                 param.type = javaType
-                var printfArg = formatMap.get(type)
+                const printfArg = formatMap.get(type)
                 //console.log("printf: " + printfArg)
                 if (!printfArg) throw new Error("topicInfo filter: type not found in formatMap: " + type)
                 //console.log("Replacing " + nameWithBrackets)
                 publishTopic = publishTopic.replace(nameWithBrackets, printfArg)
             } else {
-                var en = schema.enum
+                const en = schema.enum
                 if (en) {
                     //console.log("It's an enum: " + en)
                     param.type = _.upperFirst(name)
@@ -206,7 +208,7 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     function dump(obj) {
-        var s = '' + typeof obj
+        let s = '' + typeof obj
         for (const p in obj) {
             s += " "
             s += p
@@ -215,7 +217,7 @@ module.exports = ({ Nunjucks, _ }) => {
     }
 
     function messageClass(pubOrSub) {
-        var ret
+        let ret
 
         if (pubOrSub && pubOrSub._json && pubOrSub._json.message) {
             ret = _.upperFirst(pubOrSub._json.message.name)
@@ -225,7 +227,7 @@ module.exports = ({ Nunjucks, _ }) => {
     }
 
     function payloadClass(pubOrSub) {
-        var ret
+        let ret
 
         if (pubOrSub && pubOrSub._json && pubOrSub._json.message && pubOrSub._json.message.payload) {
             ret = _.upperFirst(pubOrSub._json.message.payload.title)

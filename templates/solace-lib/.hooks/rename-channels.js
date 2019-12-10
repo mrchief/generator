@@ -5,13 +5,13 @@ const sourceHead = '/src/main/java/'
 
 module.exports = register => {
   register('generate:after', generator => {
-    var asyncapi = generator.asyncapi
-    var sourcePath = generator.targetDir + sourceHead
-    var info = asyncapi.info()
-    var package = generator.templateParams['java-package']
+    const asyncapi = generator.asyncapi
+    let sourcePath = generator.targetDir + sourceHead
+    const info = asyncapi.info()
+    let package = generator.templateParams['java-package']
 
     if (!package && info) {
-        var extensions = info.extensions()
+        const extensions = info.extensions()
         if (extensions) {
             package =  extensions['x-java-package']
         }
@@ -19,9 +19,9 @@ module.exports = register => {
 
     if (package) {
         //console.log("package: " + package)
-        var overridePath = generator.targetDir + sourceHead + package.replace(/\./g, '/') + '/'
-        console.log("Moving from " + sourcePath + " to " + overridePath)
-        var first = true
+        const overridePath = generator.targetDir + sourceHead + package.replace(/\./g, '/') + '/'
+        console.log("Moving files from " + sourcePath + " to " + overridePath)
+        let first = true
         fs.readdirSync(sourcePath).forEach( file => {
             if (first) {
                 first = false
@@ -35,11 +35,11 @@ module.exports = register => {
     }
 
     for (name in asyncapi.channels()) {
-        var chan = asyncapi.channel(name)
-        extensions = chan.extensions()
-        var className = extensions['x-java-class']
-        var newName = name.replace(/\//g, "-")
-        console.log("renaming " + newName + " to " + className)
+        const chan = asyncapi.channel(name)
+        const extensions = chan.extensions()
+        const className = extensions['x-java-class']
+        const newName = name.replace(/\//g, "-")
+        console.log("Renaming " + newName + " to " + className)
         fs.renameSync(path.resolve(sourcePath, newName), path.resolve(sourcePath, className + ".java"))
     }
   })
