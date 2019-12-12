@@ -1,11 +1,13 @@
 module.exports = ({ Nunjucks, _ }) => {
 
     const typeMap = new Map()
+    typeMap.set('boolean', 'boolean')
     typeMap.set('integer', 'int')
     typeMap.set('number', 'double')
     typeMap.set('string', 'String')
 
     const formatMap = new Map()
+    formatMap.set('boolean', '%s')
     formatMap.set('enum', '%s')
     formatMap.set('integer', '%d')
     formatMap.set('number', '%f')
@@ -77,9 +79,28 @@ module.exports = ({ Nunjucks, _ }) => {
 		return indent(numTabs+2)
     })
 
-    Nunjucks.addFilter('fixType', ([name, type]) => {
+    Nunjucks.addFilter('fixType', ([name, property]) => {
+
+		// For message headers, type is a property.
+		// For schema properties, type is a function.
+		let type = property.type
+
+		if (typeof type == "function") {
+			type = property.type()
+		}
+
+		// console.log('fixType: ' + name + ' ' + type + ' ' + dump(property._json) + ' ' + property._json.enum)
+
+		// If a schema has a property that is a ref to another schema,
+		// the type is undefined, and the title gives the title of the referenced schema.
         let ret
-        if (type === 'object') {
+        if (type === undefined) {
+		    if (property._json.enum) {
+            	ret = _.upperFirst(name)
+			} else {
+				ret = property.title()
+			}
+        } else if (type === 'object') {
             ret = _.upperFirst(name)
         } else {
             ret = typeMap.get(type)
@@ -155,6 +176,13 @@ module.exports = ({ Nunjucks, _ }) => {
         return ret;
     })
 
+    Nunjucks.addFilter('seeProp', ([name, prop]) => {
+	    //if (name == 'account') {
+			//console.log("prop: " + name + " " + dump(prop) + "|" + prop.title() + " " + dump(prop._json))
+			console.log("prop: " + name + " type: " + prop.type() + " title: " + prop.title()) 
+		//}
+	})
+
     Nunjucks.addFilter('toJson', (object) => {
         return JSON.stringify(object)
     })
@@ -225,8 +253,8 @@ module.exports = ({ Nunjucks, _ }) => {
     })
 
     function dump(obj) {
-        let s = '' + typeof obj
-        for (const p in obj) {
+        let s = typeof obj
+        for (let p in obj) {
             s += " "
             s += p
         }

@@ -5,8 +5,8 @@ import java.util.HashMap;
 public class {{ className }} { 
 
 
-	// Topic: This field allows the client to see the topic
-	// of a received messages. It is not necessary to set this 
+	// topic and messageId: These fields allow the client to see the topic
+	// and messageId of a received messages. It is not necessary to set these 
 	// when publishing.
 
 	private String topic;
@@ -20,15 +20,26 @@ public class {{ className }} {
 		return this;
 	}
 
+	private String messageId;
+
+	public String getMessageId() {
+		return messageId;
+	}
+
+	public {{ className }} setMessageId(String messageId) {
+		this.messageId = messageId;
+		return this;
+	}
+
 	// Headers with their getters and setters.
 	private HashMap<String, Object> headers = new HashMap<>();
 {% for name, prop in message.json().headers.properties -%}
-{%- set type = [name, prop.type] | fixType %}
+{%- set type = [name, prop] | fixType %}
 	private {{ type }} {{ name }};
 {% endfor %}
 
 {%- for name, prop in message.json().headers.properties -%}
-{%- set type = [name, prop.type] | fixType %}
+{%- set type = [name, prop] | fixType %}
 	public {{ type }} get{{- name | upperFirst }}() {
 		return {{ name }};
 	}

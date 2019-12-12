@@ -191,6 +191,7 @@ public class {{ className }} {
 			try {
 				payload = serializer.deserialize(textMessage.getText());
 				{{ messageClass }}  {{ lowerMessageName }} = new {{ messageClass }}();
+				{{ lowerMessageName }}.setMessageId(textMessage.getMessageId());
 				{{ lowerMessageName }}.setPayload(payload);
 				{{ lowerMessageName }}.setTopic(bytesMessage.getDestination().getName());
 				listener.onReceive({{ lowerMessageName }});
