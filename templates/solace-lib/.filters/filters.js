@@ -65,10 +65,27 @@ module.exports = ({ Nunjucks, _ }) => {
 
     Nunjucks.addFilter('dump', dump)
 
-    Nunjucks.addFilter('fixType', (str) => {
-        let ret = typeMap.get(str)
-        if (!ret) {
-            ret = str
+    Nunjucks.addFilter('indent1', (numTabs) => {
+		return indent(numTabs)
+    })
+
+    Nunjucks.addFilter('indent2', (numTabs) => {
+		return indent(numTabs+1)
+    })
+
+    Nunjucks.addFilter('indent3', (numTabs) => {
+		return indent(numTabs+2)
+    })
+
+    Nunjucks.addFilter('fixType', ([name, type]) => {
+        let ret
+        if (type === 'object') {
+            ret = _.upperFirst(name)
+        } else {
+            ret = typeMap.get(type)
+            if (!ret) {
+                ret = type
+            }
         }
         return ret
     })
@@ -215,6 +232,10 @@ module.exports = ({ Nunjucks, _ }) => {
         }
         return s
     }
+
+	function indent(numTabs) {
+		return "\t".repeat(numTabs)
+	}
 
     function messageClass(pubOrSub) {
         let ret

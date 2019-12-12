@@ -1,0 +1,26 @@
+{%- macro javaClass(name, props, indentLevel) %}
+{%- set className = name | upperFirst %}
+{% set indent1 = indentLevel | indent1 -%}
+{% set indent2 = indentLevel | indent2 -%}
+{% set indent3 = indentLevel | indent3 -%}
+{{ indent1 }}public class {{ className }} {
+{% for name, prop in props -%}
+{%- set type = [name, prop.type()] | fixType %}
+{{ indent2 }}private {{ type }} {{ name }};
+{%- endfor -%}
+{%- for name, prop in props %}
+{% set type = [name, prop.type()] | fixType %}
+{{ indent2 }}public {{ type }} get{{- name | upperFirst }}() {
+{{ indent3 }}return {{ name }};
+{{ indent2 }}}
+
+{{ indent2 }}public {{ className }} set{{- name | upperFirst }}( {{ type }} {{ name }} ) {
+{{ indent3 }}this.{{-name }} = {{ name }};
+{{ indent3 }}return this;
+{{ indent2 }}}
+{%- if prop.type() === 'object' -%}
+{{ javaClass(name, prop.properties(), indentLevel+1) }}
+{% endif -%}
+{%- endfor %}
+{{ indent1 }}}
+{% endmacro -%}

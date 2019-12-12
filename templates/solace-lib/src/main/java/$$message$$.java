@@ -23,12 +23,12 @@ public class {{ className }} {
 	// Headers with their getters and setters.
 	private HashMap<String, Object> headers = new HashMap<>();
 {% for name, prop in message.json().headers.properties -%}
-{%- set type = prop.type | fixType %}
+{%- set type = [name, prop.type] | fixType %}
 	private {{ type }} {{ name }};
 {% endfor %}
 
 {%- for name, prop in message.json().headers.properties -%}
-{%- set type = prop.type | fixType %}
+{%- set type = [name, prop.type] | fixType %}
 	public {{ type }} get{{- name | upperFirst }}() {
 		return {{ name }};
 	}
