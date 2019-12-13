@@ -1,9 +1,9 @@
 module.exports = ({ Nunjucks, _ }) => {
 
     const typeMap = new Map()
-    typeMap.set('boolean', 'boolean')
-    typeMap.set('integer', 'int')
-    typeMap.set('number', 'double')
+    typeMap.set('boolean', 'Boolean')
+    typeMap.set('integer', 'Integer')
+    typeMap.set('number', 'Double')
     typeMap.set('string', 'String')
 
     const formatMap = new Map()
@@ -15,14 +15,14 @@ module.exports = ({ Nunjucks, _ }) => {
 
     Nunjucks.addFilter('artifactId', ([info, params]) => {
         let ret = ''
-        if (params['maven-artifact-id']) {
-            ret = params['maven-artifact-id']
-        } else if (info.extensions()['x-maven-artifact-id']) {
-            ret = info.extensions()['x-maven-artifact-id']
+        if (params['artifact-id']) {
+            ret = params['artifact-id']
+        } else if (info.extensions()['x-artifact-id']) {
+            ret = info.extensions()['x-artifact-id']
         } else if (info.title()) {
             ret = _.kebabCase(info.title())
         } else {
-            throw new Error("Can't determine the maven artifact id. Please set the param maven-artifact-id, or element info.title or info.x-maven-artifact-id.")
+            throw new Error("Can't determine the artifact id. Please set the param artifact-id, or element info.title or info.x-artifact-id.")
         }
         return ret
     })
@@ -113,12 +113,12 @@ module.exports = ({ Nunjucks, _ }) => {
 
     Nunjucks.addFilter('groupId', ([info, params]) => {
         let ret = ''
-        if (params['maven-group-id']) {
-            ret = params['maven-group-id']
-        } else if (info.extensions()['x-maven-group-id']) {
-            ret = info.extensions()['x-maven-group-id']
+        if (params['group-id']) {
+            ret = params['group-id']
+        } else if (info.extensions()['x-group-id']) {
+            ret = info.extensions()['x-group-id']
         } else {
-            throw new Error("Can't determine the maven group id. Please set the param maven-group-id or element info.x-maven-group-id.")
+            throw new Error("Can't determine the group id. Please set the param group-id or element info.x-group-id.")
         }
         return ret
     })
