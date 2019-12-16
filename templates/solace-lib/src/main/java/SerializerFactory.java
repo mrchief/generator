@@ -1,5 +1,4 @@
-package com.solace.asyncapi;
-
+{% include '.partials/java-package' -%}
 public class SerializerFactory {
 
 	private static String JSON = "application/json";

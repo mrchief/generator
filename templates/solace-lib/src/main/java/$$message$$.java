@@ -1,6 +1,7 @@
 {% include '.partials/java-package' -%}
 import java.util.HashMap;
 {%- set className = messageName | upperFirst %}
+{%- set lowerMessageName = messageName | lowerFirst %}
 
 public class {{ className }} { 
 
@@ -64,5 +65,12 @@ public class {{ className }} {
 	public {{ className }} setPayload({{ type }} {{ name }}) {
 		this.{{- name }} = {{ name }};
 		return this;
+	}
+
+	// Listers
+
+	public interface SubscribeListener {
+		public void onReceive({{ className }} {{ lowerMessageName }});
+		public void handleException(Exception exception);
 	}
 }

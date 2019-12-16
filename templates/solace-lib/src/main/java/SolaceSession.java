@@ -1,5 +1,4 @@
 {% include '.partials/java-package' -%}
-
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;

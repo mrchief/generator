@@ -1,5 +1,4 @@
-package com.solace.asyncapi;
-
+{% include '.partials/java-package' -%}
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonSerializer<T> extends JacksonSerializer<T> {

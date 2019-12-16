@@ -99,7 +99,7 @@ public class {{ className }} {
 {%- endif %}
 {% if channel.hasSubscribe() %}
 {% if queueInfo.isQueue %}
-	public void subscribe(SubscribeListener listener) throws Exception {
+	public void subscribe({{ messageClass }}.SubscribeListener listener) throws Exception {
 		MessageListener messageListener = new MessageListener(listener);
 		final Queue queue = JCSMPFactory.onlyInstance().createQueue("{{ queueInfo.queueName }}");
 		ConsumerFlowProperties flowProps = new ConsumerFlowProperties();
@@ -108,7 +108,7 @@ public class {{ className }} {
 		flowReceiver.start();
 	}
 {% else %}
-	public void subscribe(SubscribeListener listener) throws Exception {
+	public void subscribe({{ messageClass }}.SubscribeListener listener) throws Exception {
 		MessageListener messageListener = new MessageListener(listener);
 		consumer = jcsmpSession.getMessageConsumer(messageListener);
 		Topic topic = JCSMPFactory.onlyInstance().createTopic(SUBSCRIBE_TOPIC);
@@ -166,16 +166,11 @@ public class {{ className }} {
 {%- endfor -%}
 {%- if channel.hasSubscribe() -%}
 {%- set lowerMessageName = messageClass | lowerFirst %}
-	public interface SubscribeListener {
-		public void onReceive({{messageClass}} {{ lowerMessageName }});
-		public void handleException(Exception exception);
-	}
-	
 	class MessageListener implements XMLMessageListener {
 
-		SubscribeListener listener;
+		{{ messageClass }}.SubscribeListener listener;
 		
-		public MessageListener(SubscribeListener listener) {
+		public MessageListener({{ messageClass }}.SubscribeListener listener) {
 			this.listener = listener;
 		}
 		
@@ -203,11 +198,6 @@ public class {{ className }} {
 {%- endif %}
 {%- if channel.hasPublish() %}
 
-	public interface PublishListener {
-		public void onResponse(String messageId);
-		public void handleException(String messageId, Exception exception, long timestamp);
-	}
-	
 	class PublishEventHandler implements JCSMPStreamingPublishEventHandler {
 		
 		PublishListener listener;
