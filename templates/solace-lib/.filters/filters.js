@@ -89,7 +89,7 @@ module.exports = ({ Nunjucks, _ }) => {
 			type = property.type()
 		}
 
-		// console.log('fixType: ' + name + ' ' + type + ' ' + dump(property._json) + ' ' + property._json.enum)
+		// console.log('fixType: ' + name + ' ' + type + ' ' + dump(property._json) + ' ' )
 
 		// If a schema has a property that is a ref to another schema,
 		// the type is undefined, and the title gives the title of the referenced schema.
@@ -100,6 +100,13 @@ module.exports = ({ Nunjucks, _ }) => {
 			} else {
 				ret = property.title()
 			}
+        } else if (type === 'array') {
+		    let title = property._json.items.title
+			if (!title) {
+				throw new Error("Array property " + name + " needs to refer to a type with a title.")
+			}
+			//console.log('array: ' + title)
+            ret = _.upperFirst(title) + "[]"
         } else if (type === 'object') {
             ret = _.upperFirst(name)
         } else {
