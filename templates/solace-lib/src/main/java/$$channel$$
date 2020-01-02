@@ -11,6 +11,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.solacesystems.jcsmp.BytesMessage;
 import com.solacesystems.jcsmp.BytesXMLMessage;
 {% if channel.hasSubscribe() and queueInfo.isQueue -%}
 import com.solacesystems.jcsmp.ConsumerFlowProperties;
@@ -180,15 +181,24 @@ public class {{ className }} {
 		}
 
 		@Override
-		public void onReceive(BytesXMLMessage bytesMessage) {
-			TextMessage textMessage = (TextMessage) bytesMessage;
+		public void onReceive(BytesXMLMessage bytesXMLMessage) {
+			String text = null;
+
+			if (bytesXMLMessage instanceof  TextMessage) {
+				TextMessage textMessage = (TextMessage) bytesXMLMessage;
+				text = textMessage.getText();
+			} else if (bytesXMLMessage instanceof BytesMessage) {
+				text = new String(((BytesMessage) bytesXMLMessage).getData());
+			}
+
 			{{ payloadClass }} payload;
+
 			try {
-				payload = serializer.deserialize(textMessage.getText());
+				payload = serializer.deserialize(text);
 				{{ messageClass }}  {{ lowerMessageName }} = new {{ messageClass }}();
-				{{ lowerMessageName }}.setMessageId(textMessage.getMessageId());
+				{{ lowerMessageName }}.setMessageId(bytesXMLMessage.getMessageId());
 				{{ lowerMessageName }}.setPayload(payload);
-				{{ lowerMessageName }}.setTopic(bytesMessage.getDestination().getName());
+				{{ lowerMessageName }}.setTopic(bytesXMLMessage	.getDestination().getName());
 				listener.onReceive({{ lowerMessageName }});
 			} catch (Exception exception) {
 				listener.handleException(exception);
@@ -242,4 +252,3 @@ public class {{ className }} {
 {%- endif %}
 
 }
-
