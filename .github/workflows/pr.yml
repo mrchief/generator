@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checking PR title 
-      uses: mrchief/conventional-pr-title-action
+      uses: mrchief/conventional-pr-title-action@master
       with:
         success-state: 'Pull request title follows the Conventional Commits specification.'
         failure-state: 'Pull request title does not follow the the Conventional Commits specification. Consult the contribution guide.'
